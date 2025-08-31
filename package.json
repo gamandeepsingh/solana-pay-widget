@@ -1,6 +1,6 @@
 {
   "name": "solana-pay-widget",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "type": "module",
   "description": "A seamless Web3 payment solution that bridges traditional payments with Solana blockchain",
   "main": "dist/index.js",

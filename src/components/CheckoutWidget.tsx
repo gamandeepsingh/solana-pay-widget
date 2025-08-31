@@ -55,6 +55,29 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
     }
   };
 
+  // Custom WalletMultiButton that closes the modal when clicked
+  const CustomWalletMultiButton = () => {
+    const handleClick = (e: React.MouseEvent) => {
+      // Close the modal when the wallet button is clicked
+      if (onClose) {
+        onClose();
+      }
+      
+      // You could also add a small delay to ensure the modal closes before
+      // the wallet provider modal opens
+      setTimeout(() => {
+        // The original WalletMultiButton behavior will continue
+        // as the click event propagates to the actual button
+      }, 100);
+    };
+
+    return (
+      <div onClick={handleClick}>
+        <WalletMultiButton />
+      </div>
+    );
+  };
+
   // Validate merchant wallet address
   const merchantPublicKey = useMemo(() => {
     try {
@@ -213,7 +236,7 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
             {!connected ? (
               <div className="sp-wallet-connect">
                 <p>Connect your Solana wallet to continue</p>
-                <WalletMultiButton />
+                <CustomWalletMultiButton />
               </div>
             ) : (
               <div className="sp-wallet-connected">
