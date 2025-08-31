@@ -1,5 +1,5 @@
 {
-  "name": "@solana-pay/checkout-widget",
+  "name": "solana-pay-widget",
   "version": "1.0.0",
   "type": "module",
   "description": "A seamless Web3 payment solution that bridges traditional payments with Solana blockchain",

@@ -32,8 +32,18 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
           amount,
           currency,
           ref.toString(),
-          productName
+          productName,
+          `Payment for ${productName}`
         );
+        
+        console.log('QR Code Payment Details:', {
+          recipient,
+          amount,
+          currency,
+          reference: ref.toString(),
+          productName,
+          generatedUrl: payUrl
+        });
         
         setReference(ref.toString());
         setQrCodeUrl(payUrl);
@@ -45,18 +55,20 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
           color: {
             dark: '#000000',
             light: '#FFFFFF'
-          }
+          },
+          errorCorrectionLevel: 'M'
         });
         setQrCodeDataUrl(qrDataUrl);
         
         // Start polling for transaction
         const pollForTransaction = async () => {
-          // This would typically call your backend API to check for the transaction
-          // For now, we'll just show the QR code
+          // make a api call to check whether the txn is completed or not with time interval of 5 seconds
+          console.log('Waiting for transaction with reference:', ref.toString());
         };
         
         pollForTransaction();
       } catch (error) {
+        console.error('QR Code generation failed:', error);
         onError(error as Error);
       }
     };
@@ -80,9 +92,32 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
           </div>
         )}
       </div>
-      <p className="sp-qr-instructions">
-        Scan this QR code with your Solana mobile wallet to complete payment
-      </p>
+      <div className="sp-qr-info">
+        <p className="sp-qr-instructions">
+          Scan this QR code with your Solana mobile wallet to complete payment
+        </p>
+        <div className="sp-payment-summary">
+          <p><strong>Amount:</strong> {amount} {currency}</p>
+          <p><strong>Network:</strong> Devnet</p>
+        </div>
+      </div>
+      {qrCodeUrl && (
+        <details className="sp-qr-debug">
+          <summary>Debug: Show Payment URL</summary>
+          <div className="sp-qr-url">
+            <small>{qrCodeUrl}</small>
+          </div>
+          <div className="sp-troubleshoot">
+            <h4>Troubleshooting Tips:</h4>
+            <ul>
+              <li>Make sure your wallet is connected to Devnet</li>
+              <li>Ensure you have sufficient SOL for transaction fees</li>
+              <li>Try refreshing the QR code if it doesn't work</li>
+              <li>Some wallets may not support all Solana Pay features</li>
+            </ul>
+          </div>
+        </details>
+      )}
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React from 'react';
-import { CheckoutWidget, WalletConnectionProvider } from '@solana-pay/checkout-widget';
-import '@solana-pay/checkout-widget/dist/index.css';
+import { CheckoutWidget, WalletConnectionProvider } from 'solana-pay-widget';
+import 'solana-pay-widget/dist/index.css';
 
 function App() {
   const handleSuccess = (txId) => {
@@ -21,7 +21,7 @@ function App() {
         <CheckoutWidget
           checkoutId="demo_checkout_123"
           merchantWallet="9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-          amount={0.0001}
+          amount={0.001}
           currency="SOL"
           productName="Premium Subscription"
           description="Monthly premium subscription with all features"

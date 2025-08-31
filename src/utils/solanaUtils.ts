@@ -70,8 +70,21 @@ export const createSolanaPayTransaction = async (
       const balance = await connection.getBalance(sender);
       const requiredLamports = lamports.toNumber();
       
-      if (balance < requiredLamports) {
-        throw new Error(`Insufficient SOL balance. Required: ${amount} SOL, Available: ${balance / LAMPORTS_PER_SOL} SOL`);
+      // Add buffer for transaction fees (approximately 0.000005 SOL = 5000 lamports)
+      const estimatedFees = 10000; // Conservative estimate for fees
+      const totalRequired = requiredLamports + estimatedFees;
+      
+      if (balance < totalRequired) {
+        const requiredSOL = totalRequired / LAMPORTS_PER_SOL;
+        const availableSOL = balance / LAMPORTS_PER_SOL;
+        throw new Error(
+          `Insufficient SOL balance. Required: ${requiredSOL.toFixed(6)} SOL (including fees), Available: ${availableSOL.toFixed(6)} SOL. Please add at least ${(requiredSOL - availableSOL).toFixed(6)} SOL to your wallet.`
+        );
+      }
+
+      // Ensure minimum amount for rent exemption
+      if (requiredLamports < 1000) {
+        throw new Error('Amount too small. Minimum payment amount is 0.000001 SOL to cover transaction costs.');
       }
 
       transaction.add(
@@ -168,14 +181,8 @@ export const createSolanaPayTransaction = async (
       }
     }
 
-    // Add reference for tracking (smaller amount to avoid fees)
-    transaction.add(
-      SystemProgram.transfer({
-        fromPubkey: sender,
-        toPubkey: reference,
-        lamports: 1,
-      })
-    );
+    // Note: Reference tracking is handled through the Solana Pay URL parameters
+    // We don't need to send SOL to the reference account to avoid rent issues
 
     return transaction;
     
@@ -186,7 +193,26 @@ export const createSolanaPayTransaction = async (
 };
 
 export const generateReference = (): PublicKey => {
-  return PublicKey.unique();
+  // Generate a random 32-byte array for the reference
+  const randomBytes = new Uint8Array(32);
+  
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(randomBytes);
+  } else {
+    // Fallback for environments without crypto.getRandomValues
+    for (let i = 0; i < 32; i++) {
+      randomBytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+  
+  try {
+    return new PublicKey(randomBytes);
+  } catch {
+    // If that fails, use a simpler approach
+    return new PublicKey([
+      ...Array.from({ length: 32 }, () => Math.floor(Math.random() * 256))
+    ]);
+  }
 };
 
 export const createSolanaPayUrl = (
@@ -194,30 +220,54 @@ export const createSolanaPayUrl = (
   amount: number,
   currency: string,
   reference: string,
-  label: string,
+  label?: string,
   message?: string
 ): string => {
   try {
-    const params = new URLSearchParams({
-      recipient,
-      amount: amount.toString(),
-      reference,
-      label,
-      ...(message && { message }),
-    });
+    const recipientKey = new PublicKey(recipient);
 
-    // Only add spl-token parameter for token payments
-    if (currency !== 'SOL') {
-      const TOKEN_ADDRESSES = DEVNET_TOKEN_ADDRESSES; // Use devnet for testing
-      const tokenMint = TOKEN_ADDRESSES[currency as keyof typeof TOKEN_ADDRESSES];
-      if (tokenMint) {
-        params.set('spl-token', tokenMint.toString());
-      }
+    // Validate or generate reference
+    let referenceKey: PublicKey;
+    try {
+      referenceKey = new PublicKey(reference);
+    } catch {
+      referenceKey = generateReference();
     }
 
-    return `solana:${params.toString()}`;
+    const baseUrl = `solana:${recipientKey.toString()}`;
+    const params = new URLSearchParams();
+
+    // Format amount correctly
+    const formattedAmount = amount
+      .toFixed(9) // max precision for SOL
+      .replace(/0+$/, '')
+      .replace(/\.$/, '');
+    params.set('amount', formattedAmount);
+
+    // SPL token (only if not SOL)
+    if (currency !== 'SOL') {
+      const TOKEN_ADDRESSES = DEVNET_TOKEN_ADDRESSES;
+      const tokenMint = TOKEN_ADDRESSES[currency as keyof typeof TOKEN_ADDRESSES];
+      if (!tokenMint) throw new Error(`Unsupported token: ${currency}`);
+      params.set('spl-token', tokenMint.toString());
+    }
+
+    // Reference
+    params.set('reference', referenceKey.toString());
+
+    // Optional fields
+    if (label) params.set('label', label); // raw string, no pre-encoding
+    if (message) params.set('memo', message);
+
+    const finalUrl = `${baseUrl}?${params.toString()}`;
+
+    if (finalUrl.length > 2048) {
+      console.warn('Solana Pay URL too long for some QR scanners');
+    }
+
+    return finalUrl;
   } catch (error) {
     console.error('Failed to create Solana Pay URL:', error);
-    throw new Error('Failed to generate payment URL');
+    throw new Error(`Failed to generate payment URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };

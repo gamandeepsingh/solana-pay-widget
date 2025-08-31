@@ -12,12 +12,12 @@
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
-    "@solana-pay/checkout-widget": "file:../solana-pay-checkout-widget-1.0.0.tgz",
     "buffer": "^6.0.3",
     "process": "^0.11.10",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "rollup-plugin-polyfill-node": "^0.13.0"
+    "rollup-plugin-polyfill-node": "^0.13.0",
+    "solana-pay-widget": "file:../solana-pay-widget-1.0.0.tgz"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

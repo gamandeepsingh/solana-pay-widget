@@ -248,10 +248,12 @@
   margin: 8px 0;
   color: #155724;
   font-size: 14px;
+  overflow-wrap: break-word;
 }
 
 .sp-theme-dark .sp-success p {
   color: #86efac;
+  overflow-wrap: break-word;
 }
 
 .sp-error {
@@ -281,6 +283,8 @@
   margin: 8px 0 16px 0;
   color: #721c24;
   font-size: 14px;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .sp-theme-dark .sp-error p {
@@ -411,6 +415,89 @@
 .sp-theme-dark .sp-new-payment-button:hover {
   background: #14f195;
   color: #000;
+}
+
+.sp-qr-debug {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.sp-qr-debug summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.sp-theme-dark .sp-qr-debug summary {
+  color: #ccc;
+}
+
+.sp-qr-url {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+  font-family: monospace;
+  word-break: break-all;
+  font-size: 10px;
+}
+
+.sp-theme-dark .sp-qr-url {
+  background: #2a2a2a;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+.sp-qr-info {
+  text-align: center;
+}
+
+.sp-payment-summary {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.sp-theme-dark .sp-payment-summary {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.sp-payment-summary p {
+  margin: 4px 0;
+}
+
+.sp-troubleshoot {
+  margin-top: 12px;
+  text-align: left;
+}
+
+.sp-troubleshoot h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.sp-theme-dark .sp-troubleshoot h4 {
+  color: #e0e0e0;
+}
+
+.sp-troubleshoot ul {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #666;
+}
+
+.sp-theme-dark .sp-troubleshoot ul {
+  color: #ccc;
+}
+
+.sp-troubleshoot li {
+  margin: 4px 0;
 }
 
 /* Responsive Design */
