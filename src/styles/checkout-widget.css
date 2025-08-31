@@ -300,6 +300,119 @@
   color: #ffffff;
 }
 
+.sp-validation-error {
+  text-align: center;
+  padding: 24px;
+  background: #fff5f5;
+  border-radius: 8px;
+  border: 1px solid #fed7d7;
+}
+
+.sp-theme-dark .sp-validation-error {
+  background: #3a1a1a;
+  border-color: #5a2a2a;
+}
+
+.sp-validation-error h3 {
+  margin: 0 0 12px 0;
+  color: #c53030;
+  font-size: 18px;
+}
+
+.sp-theme-dark .sp-validation-error h3 {
+  color: #f56565;
+}
+
+.sp-validation-error p {
+  margin: 0;
+  color: #c53030;
+  font-size: 14px;
+}
+
+.sp-theme-dark .sp-validation-error p {
+  color: #fc8181;
+}
+
+.sp-network-info {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.sp-network-info small {
+  color: #666;
+  font-size: 12px;
+}
+
+.sp-theme-dark .sp-network-info small {
+  color: #ccc;
+}
+
+.sp-payment-details {
+  margin: 12px 0;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.sp-theme-dark .sp-payment-details {
+  background: #2a2a2a;
+  color: #e0e0e0;
+}
+
+.sp-payment-details p {
+  margin: 4px 0;
+}
+
+.sp-error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin: 8px 0 0 0;
+}
+
+.sp-theme-dark .sp-error-text {
+  color: #f87171;
+}
+
+.sp-error-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sp-error-actions button {
+  flex: 1;
+}
+
+.sp-new-payment-button {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+  border: 1px solid #9945ff;
+  border-radius: 8px;
+  background: transparent;
+  color: #9945ff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sp-new-payment-button:hover {
+  background: #9945ff;
+  color: white;
+}
+
+.sp-theme-dark .sp-new-payment-button {
+  border-color: #14f195;
+  color: #14f195;
+}
+
+.sp-theme-dark .sp-new-payment-button:hover {
+  background: #14f195;
+  color: #000;
+}
+
 /* Responsive Design */
 @media (max-width: 480px) {
   .sp-checkout-widget {

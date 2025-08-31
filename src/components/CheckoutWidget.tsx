@@ -32,6 +32,22 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
   const { paymentStatus, updateStatus } = usePaymentFlow(onSuccess, onError);
   
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Validate merchant wallet address
+  const merchantPublicKey = useMemo(() => {
+    try {
+      return new PublicKey(merchantWallet);
+    } catch (error) {
+      setValidationError('Invalid merchant wallet address');
+      return null;
+    }
+  }, [merchantWallet]);
+
+  // Validate amount
+  const isValidAmount = useMemo(() => {
+    return amount > 0 && Number.isFinite(amount);
+  }, [amount]);
 
   const paymentMethods: PaymentMethod[] = useMemo(() => {
     const methods: PaymentMethod[] = [
@@ -72,57 +88,152 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
 
   const handleWalletPayment = async () => {
     if (!connected || !publicKey) {
-      onError?.(new Error('Wallet not connected'));
+      const error = new Error('Please connect your wallet first');
+      onError?.(error);
+      updateStatus({ status: 'failed', error: error.message });
+      return;
+    }
+
+    if (!merchantPublicKey) {
+      const error = new Error('Invalid merchant wallet address');
+      onError?.(error);
+      updateStatus({ status: 'failed', error: error.message });
+      return;
+    }
+
+    if (!isValidAmount) {
+      const error = new Error('Invalid payment amount');
+      onError?.(error);
+      updateStatus({ status: 'failed', error: error.message });
       return;
     }
 
     try {
       updateStatus({ status: 'processing' });
+      setValidationError(null);
 
-      const recipient = new PublicKey(merchantWallet);
+      // Check connection
+      const slot = await connection.getSlot();
+      if (!slot) {
+        throw new Error('Unable to connect to Solana network');
+      }
+
       const reference = generateReference();
+
+      console.log('Creating transaction...', {
+        recipient: merchantPublicKey.toString(),
+        sender: publicKey.toString(),
+        amount,
+        currency
+      });
 
       const transaction = await createSolanaPayTransaction(
         connection,
-        recipient,
+        merchantPublicKey,
         publicKey,
         amount,
         currency,
         reference
       );
 
+      console.log('Sending payment...');
       const txId = await sendPayment(connection, transaction);
       
+      console.log('Payment successful:', txId);
       updateStatus({ status: 'completed', txId });
+      
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
+      console.error('Payment error:', error);
+      
+      let errorMessage = 'Payment failed';
+      
+      if (error instanceof Error) {
+        // Handle specific error types
+        if (error.message.includes('Insufficient')) {
+          errorMessage = error.message;
+        } else if (error.message.includes('User rejected')) {
+          errorMessage = 'Transaction was cancelled';
+        } else if (error.message.includes('Blockhash not found')) {
+          errorMessage = 'Network error. Please try again.';
+        } else if (error.message.includes('could not find account')) {
+          errorMessage = `Token account not found. Please ensure you have ${currency} tokens.`;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       updateStatus({ status: 'failed', error: errorMessage });
+      onError?.(new Error(errorMessage));
     }
   };
 
   const handleFallbackPayment = async (method: string) => {
+    if (!isValidAmount) {
+      const error = new Error('Invalid payment amount');
+      onError?.(error);
+      updateStatus({ status: 'failed', error: error.message });
+      return;
+    }
+
     try {
       updateStatus({ status: 'processing' });
 
       // This would integrate with Stripe/Razorpay
       // For demo purposes, we'll simulate success
-      setTimeout(() => {
-        updateStatus({ status: 'completed', txId: `fallback_${method}_${Date.now()}` });
-      }, 2000);
+      console.log(`Processing ${method} payment for ${amount} ${currency}`);
+      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      
+      const txId = `${method}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      updateStatus({ status: 'completed', txId });
+      
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Payment failed';
       updateStatus({ status: 'failed', error: errorMessage });
+      onError?.(new Error(errorMessage));
     }
   };
 
+  const renderValidationError = () => {
+    if (validationError) {
+      return (
+        <div className="sp-validation-error">
+          <h3>❌ Configuration Error</h3>
+          <p>{validationError}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const renderNetworkInfo = () => {
+    const endpoint = connection.rpcEndpoint;
+    const isDevnetConn = endpoint.includes('devnet');
+    
+    return (
+      <div className="sp-network-info">
+        <small>
+          Network: {isDevnetConn ? 'Devnet' : 'Mainnet'} 
+          {isDevnetConn && ' (Test Network)'}
+        </small>
+      </div>
+    );
+  };
   const renderPaymentContent = () => {
+    // Show validation error first
+    const validation = renderValidationError();
+    if (validation) return validation;
+
     if (!selectedMethod) {
       return (
-        <PaymentMethods
-          methods={paymentMethods}
-          selectedMethod={selectedMethod}
-          onMethodSelect={setSelectedMethod}
-        />
+        <>
+          {renderNetworkInfo()}
+          <PaymentMethods
+            methods={paymentMethods}
+            selectedMethod={selectedMethod}
+            onMethodSelect={setSelectedMethod}
+          />
+        </>
       );
     }
 
@@ -131,6 +242,7 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         return (
           <div className="sp-wallet-payment">
             <h3>Pay with Solana Wallet</h3>
+            {renderNetworkInfo()}
             {!connected ? (
               <div className="sp-wallet-connect">
                 <p>Connect your Solana wallet to continue</p>
@@ -139,16 +251,23 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
             ) : (
               <div className="sp-wallet-connected">
                 <p>Wallet connected: {publicKey?.toString().slice(0, 8)}...</p>
+                <div className="sp-payment-details">
+                  <p>Amount: {amount} {currency}</p>
+                  <p>To: {merchantWallet.slice(0, 8)}...</p>
+                </div>
                 <button
                   className="sp-pay-button"
                   onClick={handleWalletPayment}
-                  disabled={isProcessing || paymentStatus.status === 'processing'}
+                  disabled={isProcessing || paymentStatus.status === 'processing' || !isValidAmount}
                 >
                   {isProcessing || paymentStatus.status === 'processing' 
                     ? 'Processing...' 
                     : `Pay ${amount} ${currency}`
                   }
                 </button>
+                {!isValidAmount && (
+                  <p className="sp-error-text">Invalid amount: {amount}</p>
+                )}
               </div>
             )}
           </div>
@@ -156,14 +275,17 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
 
       case 'qr':
         return (
-          <QRCodePayment
-            recipient={merchantWallet}
-            amount={amount}
-            currency={currency}
-            productName={productName}
-            onSuccess={(txId) => updateStatus({ status: 'completed', txId })}
-            onError={(error) => updateStatus({ status: 'failed', error: error.message })}
-          />
+          <>
+            {renderNetworkInfo()}
+            <QRCodePayment
+              recipient={merchantWallet}
+              amount={amount}
+              currency={currency}
+              productName={productName}
+              onSuccess={(txId) => updateStatus({ status: 'completed', txId })}
+              onError={(error) => updateStatus({ status: 'failed', error: error.message })}
+            />
+          </>
         );
 
       case 'stripe':
@@ -171,16 +293,22 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         return (
           <div className="sp-fallback-payment">
             <h3>Pay with {selectedMethod === 'stripe' ? 'Card' : 'UPI/Card'}</h3>
+            <div className="sp-payment-details">
+              <p>Amount: {amount} {currency}</p>
+            </div>
             <button
               className="sp-pay-button"
               onClick={() => handleFallbackPayment(selectedMethod)}
-              disabled={paymentStatus.status === 'processing'}
+              disabled={paymentStatus.status === 'processing' || !isValidAmount}
             >
               {paymentStatus.status === 'processing' 
                 ? 'Processing...' 
                 : `Pay ${amount} ${currency}`
               }
             </button>
+            {!isValidAmount && (
+              <p className="sp-error-text">Invalid amount: {amount}</p>
+            )}
           </div>
         );
 
@@ -198,6 +326,15 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
           {enableNftReceipt && (
             <p>🎫 Your NFT receipt will be delivered shortly</p>
           )}
+          <button
+            className="sp-new-payment-button"
+            onClick={() => {
+              updateStatus({ status: 'pending' });
+              setSelectedMethod(null);
+            }}
+          >
+            Make Another Payment
+          </button>
         </div>
       );
     }
@@ -207,15 +344,27 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         <div className="sp-error">
           <h3>❌ Payment Failed</h3>
           <p>{paymentStatus.error}</p>
-          <button
-            className="sp-retry-button"
-            onClick={() => {
-              updateStatus({ status: 'pending' });
-              setSelectedMethod(null);
-            }}
-          >
-            Try Again
-          </button>
+          <div className="sp-error-actions">
+            <button
+              className="sp-retry-button"
+              onClick={() => {
+                updateStatus({ status: 'pending' });
+                setValidationError(null);
+              }}
+            >
+              Try Again
+            </button>
+            <button
+              className="sp-back-button"
+              onClick={() => {
+                updateStatus({ status: 'pending' });
+                setSelectedMethod(null);
+                setValidationError(null);
+              }}
+            >
+              Choose Different Method
+            </button>
+          </div>
         </div>
       );
     }
@@ -241,7 +390,7 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         }
       </div>
 
-      {selectedMethod && paymentStatus.status === 'pending' && (
+      {selectedMethod && paymentStatus.status === 'pending' && !validationError && (
         <button
           className="sp-back-button"
           onClick={() => setSelectedMethod(null)}

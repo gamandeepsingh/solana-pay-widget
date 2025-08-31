@@ -21,8 +21,8 @@ function App() {
         <CheckoutWidget
           checkoutId="demo_checkout_123"
           merchantWallet="9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-          amount={0.1}
-          currency="USDC"
+          amount={0.0001}
+          currency="SOL"
           productName="Premium Subscription"
           description="Monthly premium subscription with all features"
           theme="light"
