@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { useConnection } from '@solana/wallet-adapter-react';
 import QRCode from 'qrcode';
-import { createSolanaPayUrl, generateReference } from '../utils/solanaUtils';
+import { createSolanaPayUrl, generateReference, pollForTransaction } from '../utils/solanaUtils';
+import { PublicKey } from '@solana/web3.js';
 
 interface QRCodePaymentProps {
   recipient: string;
@@ -19,9 +21,13 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
   onSuccess,
   onError,
 }) => {
+  const { connection } = useConnection();
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string>('');
   const [reference, setReference] = useState<string>('');
+  const [isPolling, setIsPolling] = useState<boolean>(false);
+  const [pollStatus, setPollStatus] = useState<string>('');
+  const pollingRef = useRef<boolean>(false);
 
   useEffect(() => {
     const generateQRCode = async () => {
@@ -61,12 +67,48 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
         setQrCodeDataUrl(qrDataUrl);
         
         // Start polling for transaction
-        const pollForTransaction = async () => {
-          // make a api call to check whether the txn is completed or not with time interval of 5 seconds
-          console.log('Waiting for transaction with reference:', ref.toString());
+        const pollForTransactionHandler = async () => {
+          if (pollingRef.current) return; // Prevent multiple polling instances
+          
+          pollingRef.current = true;
+          setIsPolling(true);
+          setPollStatus('Waiting for payment...');
+          
+          try {
+            const referenceKey = new PublicKey(ref.toString());
+            const recipientKey = new PublicKey(recipient);
+            
+            await pollForTransaction(
+              connection,
+              referenceKey,
+              recipientKey,
+              amount,
+              currency,
+              (signature: string) => {
+                console.log('Payment completed! Transaction ID:', signature);
+                setPollStatus('Payment confirmed!');
+                setIsPolling(false);
+                pollingRef.current = false;
+                onSuccess(signature);
+              },
+              (error: Error) => {
+                console.error('Payment polling failed:', error);
+                setPollStatus('Payment verification failed');
+                setIsPolling(false);
+                pollingRef.current = false;
+                onError(error);
+              }
+            );
+          } catch (error) {
+            console.error('Failed to start polling:', error);
+            setPollStatus('Failed to start payment verification');
+            setIsPolling(false);
+            pollingRef.current = false;
+            onError(error as Error);
+          }
         };
         
-        pollForTransaction();
+        pollForTransactionHandler();
       } catch (error) {
         console.error('QR Code generation failed:', error);
         onError(error as Error);
@@ -74,7 +116,13 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
     };
 
     generateQRCode();
-  }, [recipient, amount, currency, productName, onError]);
+    
+    // Cleanup function to stop polling when component unmounts
+    return () => {
+      pollingRef.current = false;
+      setIsPolling(false);
+    };
+  }, [recipient, amount, currency, productName, onError, connection]);
 
   return (
     <div className="sp-qr-payment">
@@ -100,6 +148,17 @@ export const QRCodePayment: React.FC<QRCodePaymentProps> = ({
           <p><strong>Amount:</strong> {amount} {currency}</p>
           <p><strong>Network:</strong> Devnet</p>
         </div>
+        {isPolling && (
+          <div className="sp-polling-status">
+            <div className="sp-polling-indicator">
+              <span className="sp-spinner"></span>
+              <span>{pollStatus}</span>
+            </div>
+            <p className="sp-polling-help">
+              Complete the payment in your wallet app. We'll automatically detect when it's done.
+            </p>
+          </div>
+        )}
       </div>
       {qrCodeUrl && (
         <details className="sp-qr-debug">

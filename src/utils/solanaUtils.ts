@@ -215,6 +215,109 @@ export const generateReference = (): PublicKey => {
   }
 };
 
+// Function to poll for transactions with a specific amount to recipient
+export const pollForTransaction = async (
+  connection: Connection,
+  reference: PublicKey,
+  recipient: PublicKey,
+  expectedAmount: number,
+  currency: string,
+  onSuccess: (signature: string) => void,
+  onError: (error: Error) => void,
+  maxAttempts: number = 60 // 5 minutes with 5-second intervals
+): Promise<void> => {
+  let attempts = 0;
+  const startTime = Date.now();
+  
+  const checkTransaction = async () => {
+    try {
+      console.log(`Polling attempt ${attempts + 1}/${maxAttempts} for payment to:`, recipient.toString());
+      
+      // Check recent transactions for the recipient (merchant wallet)
+      const signatures = await connection.getSignaturesForAddress(recipient, {
+        limit: 20 // Check recent transactions
+      });
+      
+      if (signatures.length > 0) {
+        console.log(`Found ${signatures.length} transactions for recipient`);
+        
+        // Check each transaction that occurred after we started polling
+        for (const signatureInfo of signatures) {
+          try {
+            // Only check transactions that happened after we started (with some buffer)
+            const txTime = signatureInfo.blockTime ? signatureInfo.blockTime * 1000 : 0;
+            if (txTime < startTime - 30000) { // 30 second buffer
+              continue;
+            }
+            
+            // Get transaction details
+            const transaction = await connection.getTransaction(signatureInfo.signature, {
+              maxSupportedTransactionVersion: 0
+            });
+            
+            if (transaction && transaction.meta) {
+              // Check if this is a SOL transfer with the expected amount
+              if (currency === 'SOL') {
+                const expectedLamports = expectedAmount * LAMPORTS_PER_SOL;
+                
+                // Check pre and post balances for the recipient
+                const recipientIndex = transaction.transaction.message.getAccountKeys().staticAccountKeys
+                  .findIndex(key => key.equals(recipient));
+                
+                if (recipientIndex !== -1 && 
+                    transaction.meta.preBalances && 
+                    transaction.meta.postBalances) {
+                  
+                  const balanceChange = transaction.meta.postBalances[recipientIndex] - transaction.meta.preBalances[recipientIndex];
+                  
+                  // Check if the balance change matches our expected amount (with small tolerance for fees)
+                  if (Math.abs(balanceChange - expectedLamports) < 1000) { // 1000 lamports tolerance
+                    console.log('Found matching transaction:', signatureInfo.signature);
+                    
+                    if (signatureInfo.confirmationStatus === 'confirmed' || signatureInfo.confirmationStatus === 'finalized') {
+                      console.log('Transaction confirmed:', signatureInfo.signature);
+                      onSuccess(signatureInfo.signature);
+                      return;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (txError) {
+            console.log('Error getting transaction details:', txError);
+            // Continue checking other transactions
+          }
+        }
+      }
+      
+      attempts++;
+      
+      if (attempts >= maxAttempts) {
+        onError(new Error('Transaction timeout. The payment may have completed but verification failed. Please check your wallet transaction history.'));
+        return;
+      }
+      
+      // Continue polling after 5 seconds
+      setTimeout(checkTransaction, 5000);
+      
+    } catch (error) {
+      console.error('Error polling for transaction:', error);
+      attempts++;
+      
+      if (attempts >= maxAttempts) {
+        onError(new Error('Failed to verify transaction. Please check your wallet and try again.'));
+        return;
+      }
+      
+      // Continue polling after 5 seconds even if there's an error
+      setTimeout(checkTransaction, 5000);
+    }
+  };
+  
+  // Start polling immediately
+  checkTransaction();
+};
+
 export const createSolanaPayUrl = (
   recipient: string,
   amount: number,
