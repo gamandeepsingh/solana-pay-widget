@@ -16,8 +16,9 @@
     "process": "^0.11.10",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-toastify": "^11.0.5",
     "rollup-plugin-polyfill-node": "^0.13.0",
-    "solana-pay-widget": "file:../solana-pay-widget-1.0.0.tgz"
+    "solana-pay-widget": "^1.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

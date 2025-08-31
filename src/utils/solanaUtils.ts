@@ -15,7 +15,7 @@ import {
 } from '@solana/spl-token';
 import BigNumber from 'bignumber.js';
 
-// Devnet token addresses (use these for testing)
+// Devnet token addresses
 const DEVNET_TOKEN_ADDRESSES = {
   USDC: new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'), // Devnet USDC
   USDT: new PublicKey('BQcdHdAQW1hczDbBi9hiegXAR7A98Q9jx3X3iBBBDiq4'), // Devnet USDT
@@ -27,13 +27,11 @@ const MAINNET_TOKEN_ADDRESSES = {
   USDT: new PublicKey('Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB'),
 };
 
-// Helper function to determine if we're on devnet
 const isDevnet = (connection: Connection): boolean => {
   const endpoint = connection.rpcEndpoint;
   return endpoint.includes('devnet') || endpoint.includes('127.0.0.1') || endpoint.includes('localhost');
 };
 
-// Helper function to check if account exists
 const accountExists = async (connection: Connection, address: PublicKey): Promise<boolean> => {
   try {
     const accountInfo = await connection.getAccountInfo(address);
@@ -54,24 +52,20 @@ export const createSolanaPayTransaction = async (
   const transaction = new Transaction();
   const isDevnetConnection = isDevnet(connection);
   
-  // Use appropriate token addresses based on network
   const TOKEN_ADDRESSES = isDevnetConnection ? DEVNET_TOKEN_ADDRESSES : MAINNET_TOKEN_ADDRESSES;
 
   try {
     if (currency === 'SOL') {
-      // SOL transfer
       const lamports = new BigNumber(amount).multipliedBy(LAMPORTS_PER_SOL);
       
       if (!lamports.isInteger() || lamports.isLessThanOrEqualTo(0)) {
         throw new Error('Invalid SOL amount');
       }
 
-      // Check sender SOL balance
       const balance = await connection.getBalance(sender);
       const requiredLamports = lamports.toNumber();
       
-      // Add buffer for transaction fees (approximately 0.000005 SOL = 5000 lamports)
-      const estimatedFees = 10000; // Conservative estimate for fees
+      const estimatedFees = 10000;
       const totalRequired = requiredLamports + estimatedFees;
       
       if (balance < totalRequired) {
@@ -82,7 +76,6 @@ export const createSolanaPayTransaction = async (
         );
       }
 
-      // Ensure minimum amount for rent exemption
       if (requiredLamports < 1000) {
         throw new Error('Amount too small. Minimum payment amount is 0.000001 SOL to cover transaction costs.');
       }
@@ -95,14 +88,12 @@ export const createSolanaPayTransaction = async (
         })
       );
     } else {
-      // SPL Token transfer
       const mintAddress = TOKEN_ADDRESSES[currency];
       
       if (!mintAddress) {
         throw new Error(`Unsupported currency: ${currency}`);
       }
       
-      // Get sender's associated token account
       const senderTokenAccount = await getAssociatedTokenAddress(
         mintAddress,
         sender,
@@ -111,13 +102,11 @@ export const createSolanaPayTransaction = async (
         ASSOCIATED_TOKEN_PROGRAM_ID
       );
       
-      // Check if sender token account exists
       const senderAccountExists = await accountExists(connection, senderTokenAccount);
       if (!senderAccountExists) {
         throw new Error(`You don't have a ${currency} token account. Please create one first.`);
       }
 
-      // Get sender's token balance
       try {
         const senderAccount = await getAccount(connection, senderTokenAccount);
         const decimals = currency === 'USDC' ? 6 : 6; // Both USDC and USDT have 6 decimals
@@ -138,7 +127,6 @@ export const createSolanaPayTransaction = async (
           throw new Error(`Insufficient ${currency} balance. Required: ${amount} ${currency}, Available: ${availableBalance} ${currency}`);
         }
 
-        // Get recipient's associated token account
         const recipientTokenAccount = await getAssociatedTokenAddress(
           mintAddress,
           recipient,
@@ -147,12 +135,11 @@ export const createSolanaPayTransaction = async (
           ASSOCIATED_TOKEN_PROGRAM_ID
         );
 
-        // Check if recipient token account exists, create if it doesn't
         const recipientAccountExists = await accountExists(connection, recipientTokenAccount);
         if (!recipientAccountExists) {
           transaction.add(
             createAssociatedTokenAccountInstruction(
-              sender, // payer
+              sender,
               recipientTokenAccount,
               recipient,
               mintAddress,
@@ -162,7 +149,6 @@ export const createSolanaPayTransaction = async (
           );
         }
 
-        // Add transfer instruction
         transaction.add(
           createTransferInstruction(
             senderTokenAccount,
@@ -181,11 +167,7 @@ export const createSolanaPayTransaction = async (
       }
     }
 
-    // Note: Reference tracking is handled through the Solana Pay URL parameters
-    // We don't need to send SOL to the reference account to avoid rent issues
-
     return transaction;
-    
   } catch (error) {
     console.error('Transaction creation failed:', error);
     throw error;
@@ -193,13 +175,11 @@ export const createSolanaPayTransaction = async (
 };
 
 export const generateReference = (): PublicKey => {
-  // Generate a random 32-byte array for the reference
   const randomBytes = new Uint8Array(32);
   
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(randomBytes);
   } else {
-    // Fallback for environments without crypto.getRandomValues
     for (let i = 0; i < 32; i++) {
       randomBytes[i] = Math.floor(Math.random() * 256);
     }
@@ -208,14 +188,12 @@ export const generateReference = (): PublicKey => {
   try {
     return new PublicKey(randomBytes);
   } catch {
-    // If that fails, use a simpler approach
     return new PublicKey([
       ...Array.from({ length: 32 }, () => Math.floor(Math.random() * 256))
     ]);
   }
 };
 
-// Function to poll for transactions with a specific amount to recipient
 export const pollForTransaction = async (
   connection: Connection,
   reference: PublicKey,
@@ -224,43 +202,35 @@ export const pollForTransaction = async (
   currency: string,
   onSuccess: (signature: string) => void,
   onError: (error: Error) => void,
-  maxAttempts: number = 60 // 5 minutes with 5-second intervals
+  maxAttempts: number = 60
 ): Promise<void> => {
   let attempts = 0;
   const startTime = Date.now();
   
   const checkTransaction = async () => {
     try {
-      console.log(`Polling attempt ${attempts + 1}/${maxAttempts} for payment to:`, recipient.toString());
       
-      // Check recent transactions for the recipient (merchant wallet)
       const signatures = await connection.getSignaturesForAddress(recipient, {
-        limit: 20 // Check recent transactions
+        limit: 20
       });
       
       if (signatures.length > 0) {
-        console.log(`Found ${signatures.length} transactions for recipient`);
         
-        // Check each transaction that occurred after we started polling
         for (const signatureInfo of signatures) {
           try {
-            // Only check transactions that happened after we started (with some buffer)
             const txTime = signatureInfo.blockTime ? signatureInfo.blockTime * 1000 : 0;
             if (txTime < startTime - 30000) { // 30 second buffer
               continue;
             }
             
-            // Get transaction details
             const transaction = await connection.getTransaction(signatureInfo.signature, {
               maxSupportedTransactionVersion: 0
             });
             
             if (transaction && transaction.meta) {
-              // Check if this is a SOL transfer with the expected amount
               if (currency === 'SOL') {
                 const expectedLamports = expectedAmount * LAMPORTS_PER_SOL;
                 
-                // Check pre and post balances for the recipient
                 const recipientIndex = transaction.transaction.message.getAccountKeys().staticAccountKeys
                   .findIndex(key => key.equals(recipient));
                 
@@ -270,12 +240,9 @@ export const pollForTransaction = async (
                   
                   const balanceChange = transaction.meta.postBalances[recipientIndex] - transaction.meta.preBalances[recipientIndex];
                   
-                  // Check if the balance change matches our expected amount (with small tolerance for fees)
                   if (Math.abs(balanceChange - expectedLamports) < 1000) { // 1000 lamports tolerance
-                    console.log('Found matching transaction:', signatureInfo.signature);
                     
                     if (signatureInfo.confirmationStatus === 'confirmed' || signatureInfo.confirmationStatus === 'finalized') {
-                      console.log('Transaction confirmed:', signatureInfo.signature);
                       onSuccess(signatureInfo.signature);
                       return;
                     }
@@ -297,7 +264,6 @@ export const pollForTransaction = async (
         return;
       }
       
-      // Continue polling after 5 seconds
       setTimeout(checkTransaction, 5000);
       
     } catch (error) {
@@ -309,12 +275,10 @@ export const pollForTransaction = async (
         return;
       }
       
-      // Continue polling after 5 seconds even if there's an error
       setTimeout(checkTransaction, 5000);
     }
   };
   
-  // Start polling immediately
   checkTransaction();
 };
 
@@ -329,7 +293,6 @@ export const createSolanaPayUrl = (
   try {
     const recipientKey = new PublicKey(recipient);
 
-    // Validate or generate reference
     let referenceKey: PublicKey;
     try {
       referenceKey = new PublicKey(reference);
@@ -340,14 +303,12 @@ export const createSolanaPayUrl = (
     const baseUrl = `solana:${recipientKey.toString()}`;
     const params = new URLSearchParams();
 
-    // Format amount correctly
     const formattedAmount = amount
-      .toFixed(9) // max precision for SOL
+      .toFixed(9)
       .replace(/0+$/, '')
       .replace(/\.$/, '');
     params.set('amount', formattedAmount);
 
-    // SPL token (only if not SOL)
     if (currency !== 'SOL') {
       const TOKEN_ADDRESSES = DEVNET_TOKEN_ADDRESSES;
       const tokenMint = TOKEN_ADDRESSES[currency as keyof typeof TOKEN_ADDRESSES];
@@ -355,11 +316,9 @@ export const createSolanaPayUrl = (
       params.set('spl-token', tokenMint.toString());
     }
 
-    // Reference
     params.set('reference', referenceKey.toString());
 
-    // Optional fields
-    if (label) params.set('label', label); // raw string, no pre-encoding
+    if (label) params.set('label', label);
     if (message) params.set('memo', message);
 
     const finalUrl = `${baseUrl}?${params.toString()}`;

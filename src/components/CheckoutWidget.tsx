@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { PublicKey } from '@solana/web3.js';
@@ -22,10 +22,11 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
   theme = 'light',
   enableNftReceipt = false,
   webhookUrl,
-  fallbackPayments = [],
   onSuccess,
   onError,
   className = '',
+  isOpen = true,
+  onClose,
 }) => {
   const { connection } = useConnection();
   const { publicKey, connected, isProcessing, sendPayment } = useSolanaWallet();
@@ -33,6 +34,26 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
   
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Handle escape key and backdrop clicks
+  useEffect(() => {
+    if (!isOpen || !onClose) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
+
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && onClose) {
+      onClose();
+    }
+  };
 
   // Validate merchant wallet address
   const merchantPublicKey = useMemo(() => {
@@ -65,26 +86,8 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
       },
     ];
 
-    if (fallbackPayments.includes('stripe')) {
-      methods.push({
-        id: 'stripe',
-        name: 'Card Payment',
-        icon: '💳',
-        type: 'fallback',
-      });
-    }
-
-    if (fallbackPayments.includes('razorpay')) {
-      methods.push({
-        id: 'razorpay',
-        name: 'UPI / Card',
-        icon: '📱',
-        type: 'fallback',
-      });
-    }
-
     return methods;
-  }, [fallbackPayments]);
+  }, []);
 
   const handleWalletPayment = async () => {
     if (!connected || !publicKey) {
@@ -120,13 +123,6 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
 
       const reference = generateReference();
 
-      console.log('Creating transaction...', {
-        recipient: merchantPublicKey.toString(),
-        sender: publicKey.toString(),
-        amount,
-        currency
-      });
-
       const transaction = await createSolanaPayTransaction(
         connection,
         merchantPublicKey,
@@ -136,10 +132,8 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         reference
       );
 
-      console.log('Sending payment...');
       const txId = await sendPayment(connection, transaction);
       
-      console.log('Payment successful:', txId);
       updateStatus({ status: 'completed', txId });
       
     } catch (error) {
@@ -162,33 +156,6 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
         }
       }
       
-      updateStatus({ status: 'failed', error: errorMessage });
-      onError?.(new Error(errorMessage));
-    }
-  };
-
-  const handleFallbackPayment = async (method: string) => {
-    if (!isValidAmount) {
-      const error = new Error('Invalid payment amount');
-      onError?.(error);
-      updateStatus({ status: 'failed', error: error.message });
-      return;
-    }
-
-    try {
-      updateStatus({ status: 'processing' });
-
-      // This would integrate with Stripe/Razorpay
-      // For demo purposes, we'll simulate success
-      console.log(`Processing ${method} payment for ${amount} ${currency}`);
-      
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      const txId = `${method}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      updateStatus({ status: 'completed', txId });
-      
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
       updateStatus({ status: 'failed', error: errorMessage });
       onError?.(new Error(errorMessage));
     }
@@ -288,30 +255,6 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
           </>
         );
 
-      case 'stripe':
-      case 'razorpay':
-        return (
-          <div className="sp-fallback-payment">
-            <h3>Pay with {selectedMethod === 'stripe' ? 'Card' : 'UPI/Card'}</h3>
-            <div className="sp-payment-details">
-              <p>Amount: {amount} {currency}</p>
-            </div>
-            <button
-              className="sp-pay-button"
-              onClick={() => handleFallbackPayment(selectedMethod)}
-              disabled={paymentStatus.status === 'processing' || !isValidAmount}
-            >
-              {paymentStatus.status === 'processing' 
-                ? 'Processing...' 
-                : `Pay ${amount} ${currency}`
-              }
-            </button>
-            {!isValidAmount && (
-              <p className="sp-error-text">Invalid amount: {amount}</p>
-            )}
-          </div>
-        );
-
       default:
         return null;
     }
@@ -373,31 +316,55 @@ export const CheckoutWidget: React.FC<CheckoutWidgetProps> = ({
   };
 
   return (
-    <div className={`sp-checkout-widget sp-theme-${theme} ${className}`}>
-      <div className="sp-checkout-header">
-        <h2 className="sp-product-name">{productName}</h2>
-        {description && <p className="sp-product-description">{description}</p>}
-        <div className="sp-amount">
-          <span className="sp-amount-value">{amount}</span>
-          <span className="sp-amount-currency">{currency}</span>
-        </div>
-      </div>
-
-      <div className="sp-checkout-content">
-        {paymentStatus.status === 'pending' || paymentStatus.status === 'processing' 
-          ? renderPaymentContent() 
-          : renderPaymentStatus()
-        }
-      </div>
-
-      {selectedMethod && paymentStatus.status === 'pending' && !validationError && (
-        <button
-          className="sp-back-button"
-          onClick={() => setSelectedMethod(null)}
+    <>
+      {isOpen && (
+        <div 
+          className={`sp-modal-overlay sp-theme-${theme}`}
+          onClick={handleBackdropClick}
         >
-          ← Back to Payment Methods
-        </button>
+          <div className={`sp-modal-container ${className}`}>
+            <div className="sp-modal-header">
+              <div className="sp-modal-header-content">
+                <h2 className="sp-product-name">{productName}</h2>
+                {description && <p className="sp-product-description">{description}</p>}
+                <div className="sp-amount-display">
+                  <span className="sp-amount-value">{amount}</span>
+                  <span className="sp-amount-currency">{currency}</span>
+                </div>
+              </div>
+              {onClose && (
+                <button 
+                  className="sp-modal-close" 
+                  onClick={onClose}
+                  aria-label="Close payment modal"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div className="sp-modal-content">
+              {paymentStatus.status === 'pending' || paymentStatus.status === 'processing' 
+                ? renderPaymentContent() 
+                : renderPaymentStatus()
+              }
+            </div>
+
+            {selectedMethod && paymentStatus.status === 'pending' && !validationError && (
+              <div className="sp-modal-footer">
+                <button
+                  className="sp-back-button"
+                  onClick={() => setSelectedMethod(null)}
+                >
+                  ← Back to Payment Methods
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 };

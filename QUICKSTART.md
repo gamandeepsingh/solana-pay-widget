@@ -1,28 +1,25 @@
 # 🚀 Solana Pay Checkout Widget
 
-A seamless Web3 payment solution that bridges traditional payments with Solana blockchain, specifically designed for small businesses.
+A seamless Web3 payment solution that bridges traditional payments with Solana blockchain, specifically designed for businesses.
 
 ## ✨ Features
 
 - ⚡ **Quick Setup** - Get started in under 5 minutes
 - 🎯 **Zero Buffer Issues** - Pre-configured to work with Vite, Next.js, and other modern bundlers
-- 💰 **Multi-Payment Support** - Solana Pay + traditional fallback methods
+- 💰 **Multi-Payment Support** - Solana Pay
 - 📱 **Mobile-First** - QR code payments for mobile wallets
 - 🔗 **Multiple Wallets** - Phantom, Backpack, Solflare support
-- 💳 **Web2 Fallback** - Card/UPI payments via Stripe/Razorpay
-- 🎫 **NFT Receipts** - Optional proof-of-purchase NFTs
 - 🎨 **Customizable** - Light/dark themes and custom styling
 
 ## 📦 Installation
 
 ```bash
-npm install @solana-pay/checkout-widget
+npm install solana-pay-widget
 ```
 
 ### For Vite Projects
 
 Install additional polyfills:
-
 ```bash
 npm install --save-dev @esbuild-plugins/node-globals-polyfill @esbuild-plugins/node-modules-polyfill rollup-plugin-polyfill-node buffer crypto-browserify stream-browserify util
 ```
@@ -30,10 +27,12 @@ npm install --save-dev @esbuild-plugins/node-globals-polyfill @esbuild-plugins/n
 Add to your `vite.config.ts`:
 
 ```typescript
+// vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
 import { NodeModulesPolyfillPlugin } from '@esbuild-plugins/node-modules-polyfill';
+import nodePolyfills from 'rollup-plugin-polyfill-node';
 
 export default defineConfig({
   plugins: [react()],
@@ -41,16 +40,32 @@ export default defineConfig({
     global: 'globalThis',
   },
   optimizeDeps: {
+    include: ['buffer', 'process'],
     esbuildOptions: {
       plugins: [
         NodeGlobalsPolyfillPlugin({
           buffer: true,
+          process: true,
         }),
         NodeModulesPolyfillPlugin(),
       ],
     },
   },
+  resolve: {
+    alias: {
+      buffer: 'buffer/',
+      process: 'process/browser',
+    },
+  },
+  build: {
+    rollupOptions: {
+      plugins: [
+        nodePolyfills(),
+      ],
+    },
+  },
 });
+
 ```
 
 ### For Next.js Projects
@@ -58,35 +73,48 @@ export default defineConfig({
 Install additional polyfills:
 
 ```bash
-npm install buffer crypto-browserify stream-browserify util
+npm install node-polyfill-webpack-plugin buffer crypto-browserify stream-browserify util
 ```
 
 Add to your `next.config.js`:
 
-```javascript
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      buffer: require.resolve('buffer'),
-      crypto: require.resolve('crypto-browserify'),
-      stream: require.resolve('stream-browserify'),
-      util: require.resolve('util'),
-    };
-    
+```typescript
+// next.config.ts
+import type { NextConfig } from 'next';
+import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
+import webpack from 'webpack';
+
+const nextConfig: NextConfig = {
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Polyfills like alias in Vite
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        buffer: require.resolve('buffer/'),
+        process: require.resolve('process/browser'),
+        stream: require.resolve('stream-browserify'),
+        util: require.resolve('util/'),
+        crypto: require.resolve('crypto-browserify'),
+      };
+    }
+
+    // Inject global polyfills
     config.plugins.push(
-      new config.webpack.ProvidePlugin({
+      new NodePolyfillPlugin(),
+      new webpack.ProvidePlugin({
         Buffer: ['buffer', 'Buffer'],
-        process: 'process/browser',
+        process: ['process'],
+      }),
+      new webpack.DefinePlugin({
+        global: 'globalThis',
       })
     );
-    
+
     return config;
   },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
 ```
 
 ## 🚀 Quick Start
@@ -94,22 +122,38 @@ module.exports = nextConfig;
 ### 1. Basic Usage
 
 ```tsx
-import { CheckoutWidget, WalletConnectionProvider } from '@solana-pay/checkout-widget';
-import '@solana-pay/checkout-widget/dist/index.css';
+import React from 'react';
+import { CheckoutWidget, WalletConnectionProvider } from 'solana-pay-widget';
+import 'solana-pay-widget/dist/index.css';
 
 function App() {
+  const [isModalOpen, setIsModalOpen] = React.useState(true);
+
+  const handleClose = () => setIsModalOpen(false);
+  const handleSuccess = (txId: string) => {
+    console.log('Payment successful:', txId);
+    setIsModalOpen(false);
+  };
+  const handleError = (error: Error) => {
+    console.error('Payment failed:', error);
+    setIsModalOpen(false);
+  };
+
   return (
-    <WalletConnectionProvider>
-      <CheckoutWidget
-        checkoutId="checkout_123"
-        merchantWallet="9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-        amount={10.99}
-        currency="USDC"
-        productName="Premium Subscription"
-        onSuccess={(txId) => console.log('Payment successful:', txId)}
-        onError={(error) => console.error('Payment failed:', error)}
-      />
-    </WalletConnectionProvider>
+    <WalletConnectionProvider rpcEndpoint='https://api.devnet.solana.com'> 
+        <CheckoutWidget
+          checkoutId="demo_checkout_123"
+          merchantWallet="4rbzcZsLxEefKdyho3U2dc5tfKUMdSM4vyRQhAkL4EHX"
+          amount={0.001}
+          currency="SOL"
+          productName="Premium Subscription"
+          description="Monthly premium subscription with all features"
+          isOpen={isModalOpen}
+          onClose={handleClose}
+          onSuccess={handleSuccess}
+          onError={handleError}
+        />
+      </WalletConnectionProvider>
   );
 }
 ```
@@ -117,25 +161,19 @@ function App() {
 ### 2. Advanced Configuration
 
 ```tsx
-<WalletConnectionProvider rpcEndpoint="https://api.mainnet-beta.solana.com">
+<WalletConnectionProvider rpcEndpoint='https://api.devnet.solana.com'>
   <CheckoutWidget
-    checkoutId="checkout_123"
+    checkoutId="demo_checkout_123"
     merchantWallet="9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-    amount={25.00}
+    amount={0.001}
     currency="SOL"
-    productName="Digital Art NFT"
-    description="Exclusive limited edition artwork"
+    productName="Premium Subscription"
+    description="Monthly premium subscription with all features"
     theme="dark"
-    enableNftReceipt={true}
-    fallbackPayments={['stripe', 'razorpay']}
-    onSuccess={(txId) => {
-      console.log('Payment successful:', txId);
-      // Handle success (e.g., redirect, show confirmation)
-    }}
-    onError={(error) => {
-      console.error('Payment failed:', error);
-      // Handle error (e.g., show error message)
-    }}
+    isOpen={true}
+    onClose={() => {}}
+    onSuccess={() => {}}
+    onError={() => {}}
   />
 </WalletConnectionProvider>
 ```
@@ -175,27 +213,38 @@ function App() {
 | `theme` | `'light' \| 'dark' \| 'auto'` | ❌ | Widget theme |
 | `enableNftReceipt` | `boolean` | ❌ | Enable NFT receipt minting |
 | `webhookUrl` | `string` | ❌ | Payment webhook URL |
-| `fallbackPayments` | `('stripe' \| 'razorpay')[]` | ❌ | Enabled fallback methods |
 | `onSuccess` | `(txId: string) => void` | ❌ | Success callback |
 | `onError` | `(error: Error) => void` | ❌ | Error callback |
 | `className` | `string` | ❌ | Custom CSS class |
+| `isOpen` | `boolean` | ✅ | Controls modal visibility |
+| `onClose` | `() => void` | ✅ | Callback when modal is closed |
 
 ### WalletConnectionProvider Props
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| `rpcEndpoint` | `string` | ❌ | Solana RPC endpoint (defaults to mainnet) |
+| `rpcEndpoint` | `string` | ❌ | Solana RPC endpoint (defaults to devnet) |
 | `children` | `ReactNode` | ✅ | Child components |
 
 ## 🎯 Payment Flow
+
+**⚠️ Network Configuration Note:**
+By default, the widget uses **devnet** for testing. For production, explicitly set the RPC endpoint to mainnet:
+
+```tsx
+<WalletConnectionProvider rpcEndpoint='https://api.mainnet-beta.solana.com'>
+  {/* Your CheckoutWidget */}
+</WalletConnectionProvider>
+```
+
+**Payment Flow Steps:**
 
 1. **Customer visits checkout** - Widget displays product details and payment options
 2. **Payment method selection**:
    - 🦊 **Solana Wallet** - Direct wallet connection (Phantom, Backpack, Solflare)
    - 📱 **QR Code** - Mobile Solana Pay for phone wallets
-   - 💳 **Fallback** - Traditional card/UPI payments
 3. **Transaction processing** - Secure blockchain or traditional payment processing
-4. **Confirmation** - Success message with transaction ID and optional NFT receipt
+4. **Confirmation** - Success message with transaction ID
 
 ## 🔧 Common Issues & Solutions
 
@@ -212,7 +261,7 @@ This package is pre-configured to avoid common buffer/polyfill issues. However, 
 Make sure you're wrapping your app with `WalletConnectionProvider`:
 
 ```tsx
-import { WalletConnectionProvider } from '@solana-pay/checkout-widget';
+import { WalletConnectionProvider } from 'solana-pay-widget';
 
 function App() {
   return (
@@ -228,14 +277,14 @@ function App() {
 Import the CSS file in your main component:
 
 ```tsx
-import '@solana-pay/checkout-widget/dist/index.css';
+import 'solana-pay-widget/dist/index.css';
 ```
 
 ## 🛠️ Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/solana-pay-checkout-widget.git
+git clone https://github.com/gamandeepsingh/solana-pay-widget.git
 
 # Install dependencies
 npm install
@@ -257,16 +306,10 @@ Contributions are welcome! Please read our contributing guidelines and submit pu
 
 ## 📞 Support
 
-- 📖 [Documentation](https://docs.solana-pay-widget.com)
-- 💬 [Discord Community](https://discord.gg/solana-pay-widget)
-- 🐛 [Report Issues](https://github.com/yourusername/solana-pay-checkout-widget/issues)
+- 🐛 [Report Issues](https://github.com/gamandeepsingh/solana-pay-widget/issues)
+-  Twitter: [@solanapaywidget](https://x.com/GamandeepSingh4)
 
 ---
-
 <div align="center">
-
 **Built with ❤️ for the Solana ecosystem**
-
-[Website](https://solana-pay-widget.com) • [Twitter](https://twitter.com/solanapaywidget) • [Discord](https://discord.gg/solana-pay-widget)
-
 </div>

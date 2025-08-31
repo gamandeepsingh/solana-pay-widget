@@ -1,3 +1,209 @@
+/* CSS Custom Properties - shadcn inspired color system */
+:root {
+  /* Light theme colors */
+  --sp-background: #ffffff;
+  --sp-foreground: #0f172a;
+  --sp-card: #ffffff;
+  --sp-card-foreground: #0f172a;
+  --sp-popover: #ffffff;
+  --sp-popover-foreground: #0f172a;
+  --sp-primary: #0f172a;
+  --sp-primary-foreground: #f8fafc;
+  --sp-secondary: #f1f5f9;
+  --sp-secondary-foreground: #0f172a;
+  --sp-muted: #f1f5f9;
+  --sp-muted-foreground: #64748b;
+  --sp-accent: #f1f5f9;
+  --sp-accent-foreground: #0f172a;
+  --sp-destructive: #ef4444;
+  --sp-destructive-foreground: #f8fafc;
+  --sp-border: #e2e8f0;
+  --sp-input: #e2e8f0;
+  --sp-ring: #94a3b8;
+  --sp-success: #22c55e;
+  --sp-success-foreground: #f0fdf4;
+  
+  /* Radius */
+  --sp-radius: 0.5rem;
+  
+  /* Shadows */
+  --sp-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --sp-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --sp-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --sp-shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Dark theme colors */
+.sp-theme-dark {
+  --sp-background: #020617;
+  --sp-foreground: #f8fafc;
+  --sp-card: #020617;
+  --sp-card-foreground: #f8fafc;
+  --sp-popover: #020617;
+  --sp-popover-foreground: #f8fafc;
+  --sp-primary: #f8fafc;
+  --sp-primary-foreground: #0f172a;
+  --sp-secondary: #1e293b;
+  --sp-secondary-foreground: #f8fafc;
+  --sp-muted: #1e293b;
+  --sp-muted-foreground: #94a3b8;
+  --sp-accent: #1e293b;
+  --sp-accent-foreground: #f8fafc;
+  --sp-destructive: #ef4444;
+  --sp-destructive-foreground: #f8fafc;
+  --sp-border: #1e293b;
+  --sp-input: #1e293b;
+  --sp-ring: #475569;
+  --sp-success: #22c55e;
+  --sp-success-foreground: #0c1e0f;
+}
+
+/* Modal Overlay & Container */
+.sp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: sp-fade-in 0.3s ease-out;
+}
+
+.sp-modal-container {
+  max-width: 480px;
+  width: 100%;
+  max-height: 90vh;
+  background: var(--sp-card);
+  border-radius: var(--sp-radius);
+  box-shadow: var(--sp-shadow-xl);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
+  animation: sp-slide-up 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--sp-border);
+}
+
+/* Modal Header */
+.sp-modal-header {
+  background: var(--sp-card);
+  color: var(--sp-card-foreground);
+  padding: 24px;
+  position: relative;
+  text-align: center;
+  border-bottom: 1px solid var(--sp-border);
+}
+
+.sp-modal-header-content {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.sp-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: var(--sp-secondary);
+  border: 1px solid var(--sp-border);
+  border-radius: calc(var(--sp-radius) - 2px);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--sp-muted-foreground);
+  transition: all 0.2s ease;
+}
+
+.sp-modal-close:hover {
+  background: var(--sp-accent);
+  color: var(--sp-accent-foreground);
+  border-color: var(--sp-ring);
+}
+
+.sp-product-name {
+  margin: 0 0 12px 0;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--sp-foreground);
+}
+
+.sp-product-description {
+  margin: 0 0 20px 0;
+  color: var(--sp-muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.sp-amount-display {
+  background: var(--sp-muted);
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  padding: 16px 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sp-amount-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--sp-foreground);
+}
+
+.sp-amount-currency {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--sp-muted-foreground);
+}
+
+/* Modal Content */
+.sp-modal-content {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+  background: var(--sp-card);
+}
+
+/* Modal Footer */
+.sp-modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--sp-border);
+  background: var(--sp-muted);
+}
+
+/* Animations */
+@keyframes sp-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sp-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Legacy styles - keeping for backward compatibility */
 .sp-checkout-widget {
   max-width: 400px;
   margin: 0 auto;
@@ -48,153 +254,225 @@
 }
 
 .sp-payment-methods-title {
-  margin: 0 0 16px 0;
+  margin: 0 0 20px 0;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
-}
-
-.sp-theme-dark .sp-payment-methods-title {
-  color: #ffffff;
+  color: var(--sp-foreground);
+  text-align: left;
 }
 
 .sp-payment-methods-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sp-payment-method {
   padding: 16px;
-  border: 2px solid #e5e5e5;
-  border-radius: 8px;
-  background: #ffffff;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-card);
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
-}
-
-.sp-theme-dark .sp-payment-method {
-  background: #2a2a2a;
-  border-color: #444;
-  color: #ffffff;
+  gap: 12px;
+  position: relative;
 }
 
 .sp-payment-method:hover {
-  border-color: #9945ff;
-  transform: translateY(-2px);
+  border-color: var(--sp-ring);
+  box-shadow: var(--sp-shadow-sm);
 }
 
 .sp-payment-method-selected {
-  border-color: #9945ff !important;
-  background: #f8f5ff !important;
-}
-
-.sp-theme-dark .sp-payment-method-selected {
-  background: #2a1a3a !important;
+  border-color: var(--sp-primary);
+  background: var(--sp-accent);
+  box-shadow: 0 0 0 1px var(--sp-primary);
 }
 
 .sp-payment-method-icon {
-  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sp-primary);
+  border-radius: calc(var(--sp-radius) - 2px);
+  color: var(--sp-primary-foreground);
+  flex-shrink: 0;
+}
+
+.sp-payment-method-selected .sp-payment-method-icon {
+  background: var(--sp-primary);
+}
+
+.sp-payment-method-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.sp-payment-method-content {
+  flex: 1;
+  text-align: left;
 }
 
 .sp-payment-method-name {
   font-size: 14px;
   font-weight: 500;
+  color: var(--sp-foreground);
+  margin: 0 0 2px 0;
+}
+
+.sp-payment-method-description {
+  font-size: 12px;
+  color: var(--sp-muted-foreground);
+  margin: 0;
+  line-height: 1.4;
 }
 
 .sp-wallet-connect,
 .sp-wallet-connected {
   text-align: center;
+  padding: 24px;
+  background: var(--sp-muted);
+  border-radius: var(--sp-radius);
+  border: 1px solid var(--sp-border);
 }
 
 .sp-wallet-connect p,
 .sp-wallet-connected p {
-  margin: 0 0 16px 0;
-  color: #666;
-}
-
-.sp-theme-dark .sp-wallet-connect p,
-.sp-theme-dark .sp-wallet-connected p {
-  color: #ccc;
+  margin: 0 0 20px 0;
+  color: var(--sp-muted-foreground);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .sp-pay-button,
 .sp-retry-button,
 .sp-back-button {
   width: 100%;
-  padding: 16px;
-  border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #9945ff 0%, #14f195 100%);
-  color: white;
-  font-size: 16px;
-  font-weight: 600;
+  padding: 10px 16px;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-primary);
+  color: var(--sp-primary-foreground);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s ease;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .sp-pay-button:hover,
 .sp-retry-button:hover,
 .sp-back-button:hover {
+  background: var(--sp-primary);
   opacity: 0.9;
+  box-shadow: var(--sp-shadow-sm);
 }
 
 .sp-pay-button:disabled,
 .sp-retry-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
 .sp-back-button {
-  margin-top: 16px;
-  background: #6c757d;
+  background: var(--sp-secondary);
+  color: var(--sp-secondary-foreground);
+  border-color: var(--sp-border);
+}
+
+.sp-back-button:hover {
+  background: var(--sp-accent);
+  color: var(--sp-accent-foreground);
 }
 
 .sp-qr-payment {
   text-align: center;
+  padding: 20px 0;
 }
 
 .sp-qr-payment h3 {
-  margin: 0 0 16px 0;
-  color: #333;
+  margin: 0 0 8px 0;
+  color: var(--sp-foreground);
+  font-size: 18px;
+  font-weight: 600;
 }
 
-.sp-theme-dark .sp-qr-payment h3 {
-  color: #ffffff;
+.sp-qr-payment-subtitle {
+  margin: 0 0 20px 0;
+  color: var(--sp-muted-foreground);
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .sp-qr-code {
-  margin: 16px 0;
-  padding: 24px;
-  border: 1px dashed #ccc;
-  border-radius: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  margin: 20px auto;
+  padding: 20px;
+  background: var(--sp-card);
+  border-radius: var(--sp-radius);
+  border: 1px solid var(--sp-border);
+  box-shadow: var(--sp-shadow-sm);
+  display: inline-block;
+  position: relative;
+}
+
+.sp-qr-code canvas,
+.sp-qr-code img {
+  display: block;
+  border-radius: calc(var(--sp-radius) - 2px);
 }
 
 .sp-qr-image {
-  max-width: 256px;
+  max-width: 200px;
   width: 100%;
   height: auto;
-  border-radius: 8px;
+  border-radius: calc(var(--sp-radius) - 2px);
 }
 
 .sp-qr-loading {
-  padding: 40px 20px;
-  background: #f5f5f5;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #666;
+  padding: 32px 20px;
+  background: var(--sp-muted);
+  border-radius: var(--sp-radius);
+  border: 2px dashed var(--sp-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
-.sp-theme-dark .sp-qr-loading {
-  background: #333;
-  color: #ccc;
+.sp-qr-loading p {
+  margin: 0;
+  color: var(--sp-muted-foreground);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sp-loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--sp-border);
+  border-top: 2px solid var(--sp-primary);
+  border-radius: 50%;
+  animation: sp-spin 1s linear infinite;
+}
+
+@keyframes sp-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.sp-qr-instructions {
+  margin: 16px 0 0 0;
+  font-size: 14px;
+  color: var(--sp-muted-foreground);
 }
 
 .sp-qr-placeholder {
@@ -223,85 +501,88 @@
 
 .sp-success {
   text-align: center;
-  padding: 24px;
-  background: #f0f9f0;
-  border-radius: 8px;
-  border: 1px solid #d4edda;
-}
-
-.sp-theme-dark .sp-success {
-  background: #1a3a1a;
-  border-color: #2a5a2a;
+  padding: 32px 24px;
+  background: var(--sp-card);
+  border-radius: var(--sp-radius);
+  border: 1px solid var(--sp-border);
+  box-shadow: var(--sp-shadow-sm);
+  position: relative;
 }
 
 .sp-success h3 {
   margin: 0 0 12px 0;
-  color: #155724;
+  color: var(--sp-success);
   font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.sp-theme-dark .sp-success h3 {
-  color: #4ade80;
+.sp-success h3::before {
+  content: '✓';
+  display: inline-block;
+  font-size: 24px;
+  font-weight: normal;
+  background: var(--sp-success);
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
 }
 
 .sp-success p {
   margin: 8px 0;
-  color: #155724;
+  color: var(--sp-muted-foreground);
   font-size: 14px;
-  overflow-wrap: break-word;
-}
-
-.sp-theme-dark .sp-success p {
-  color: #86efac;
+  line-height: 1.5;
   overflow-wrap: break-word;
 }
 
 .sp-error {
   text-align: center;
-  padding: 24px;
-  background: #f9f0f0;
-  border-radius: 8px;
-  border: 1px solid #f5c6cb;
-}
-
-.sp-theme-dark .sp-error {
-  background: #3a1a1a;
-  border-color: #5a2a2a;
+  padding: 32px 24px;
+  background: var(--sp-card);
+  border-radius: var(--sp-radius);
+  border: 1px solid var(--sp-border);
+  box-shadow: var(--sp-shadow-sm);
+  position: relative;
 }
 
 .sp-error h3 {
   margin: 0 0 12px 0;
-  color: #721c24;
+  color: var(--sp-destructive);
   font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.sp-theme-dark .sp-error h3 {
-  color: #f87171;
+.sp-error h3::before {
+  content: '✗';
+  display: inline-block;
+  font-size: 24px;
+  font-weight: normal;
+  background: var(--sp-destructive);
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  text-align: center;
 }
 
 .sp-error p {
   margin: 8px 0 16px 0;
-  color: #721c24;
+  color: var(--sp-muted-foreground);
   font-size: 14px;
   line-height: 1.4;
   word-break: break-word;
-}
-
-.sp-theme-dark .sp-error p {
-  color: #fca5a5;
-}
-
-.sp-fallback-payment {
-  text-align: center;
-}
-
-.sp-fallback-payment h3 {
-  margin: 0 0 16px 0;
-  color: #333;
-}
-
-.sp-theme-dark .sp-fallback-payment h3 {
-  color: #ffffff;
 }
 
 .sp-validation-error {
@@ -369,13 +650,9 @@
 }
 
 .sp-error-text {
-  color: #dc3545;
+  color: var(--sp-destructive);
   font-size: 12px;
   margin: 8px 0 0 0;
-}
-
-.sp-theme-dark .sp-error-text {
-  color: #f87171;
 }
 
 .sp-error-actions {
@@ -390,12 +667,12 @@
 
 .sp-new-payment-button {
   width: 100%;
-  padding: 12px;
+  padding: 12px 16px;
   margin-top: 16px;
-  border: 1px solid #9945ff;
-  border-radius: 8px;
-  background: transparent;
-  color: #9945ff;
+  border: 1px solid var(--sp-border);
+  border-radius: var(--sp-radius);
+  background: var(--sp-secondary);
+  color: var(--sp-secondary-foreground);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -403,34 +680,7 @@
 }
 
 .sp-new-payment-button:hover {
-  background: #9945ff;
-  color: white;
-}
-
-.sp-theme-dark .sp-new-payment-button {
-  border-color: #14f195;
-  color: #14f195;
-}
-
-.sp-theme-dark .sp-new-payment-button:hover {
-  background: #14f195;
-  color: #000;
-}
-
-.sp-qr-debug {
-  margin-top: 16px;
-  text-align: left;
-}
-
-.sp-qr-debug summary {
-  cursor: pointer;
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 8px;
-}
-
-.sp-theme-dark .sp-qr-debug summary {
-  color: #ccc;
+  background: var(--sp-secondary-hover);
 }
 
 .sp-qr-url {
@@ -558,7 +808,73 @@
 }
 
 /* Responsive Design */
+@media (max-width: 768px) {
+  .sp-modal-overlay {
+    padding: 16px;
+  }
+  
+  .sp-modal-container {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+  
+  .sp-modal-header {
+    padding: 24px 20px;
+  }
+  
+  .sp-modal-content {
+    padding: 24px 20px;
+  }
+  
+  .sp-modal-footer {
+    padding: 16px 20px;
+  }
+  
+  .sp-product-name {
+    font-size: 24px;
+  }
+  
+  .sp-amount-value {
+    font-size: 28px;
+  }
+  
+  .sp-payment-method {
+    padding: 16px 20px;
+  }
+  
+  .sp-payment-method-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+}
+
 @media (max-width: 480px) {
+  .sp-modal-overlay {
+    padding: 8px;
+  }
+  
+  .sp-modal-header {
+    padding: 20px 16px;
+  }
+  
+  .sp-modal-content {
+    padding: 20px 16px;
+  }
+  
+  .sp-product-name {
+    font-size: 20px;
+  }
+  
+  .sp-amount-value {
+    font-size: 24px;
+  }
+  
+  .sp-amount-currency {
+    font-size: 16px;
+  }
+
+  /* Legacy responsive styles */
   .sp-checkout-widget {
     margin: 16px;
     max-width: calc(100vw - 32px);

@@ -3,14 +3,13 @@
 <div align="center">
 
 ![Solana Pay](https://img.shields.io/badge/Solana-Pay-9945FF?style=for-the-badge&logo=solana&logoColor=white)
-![React](https://img.shields.io/badge/React-18.0+-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![NPM](https://img.shields.io/badge/NPM-8.0+-CB3837?style=for-the-badge&logo=npm&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-14.0+-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
 
 **A seamless Web3 payment solution that bridges traditional payments with Solana blockchain**
 
-[� Live Demo](#) • [📖 Documentation](#) • [🛠️ API Reference](#) • [💬 Discord](#)
-
+[� Live Demo](http://solana-pay-wallet.vercel.app/) 
 </div>
 
 ---
@@ -23,9 +22,8 @@
 
 ### 🌟 **For Merchants**
 - ⚡ **Quick Setup** - Get started in under 5 minutes
-- 🎯 **Flexible Integration** - React component or iframe embed
-- 💰 **Multi-Payment Support** - Solana Pay + traditional methods
-- 📊 **Real-time Analytics** - Track payments and performance
+- 🎯 **Flexible Integration** - React/Typescript component
+- 💰 **Payment Support** - Solana Pay - SOL, USDC, USDT
 - 🔐 **Secure** - Non-custodial, secure by design
 
 </td>
@@ -35,9 +33,7 @@
 - 📱 **Mobile-First** - QR code payments for mobile wallets
 - ⚡ **Instant Settlements** - Sub-second transaction confirmations
 - 🔗 **Multiple Wallets** - Phantom, Backpack, Solflare support
-- 💳 **Web2 Fallback** - Card/UPI payments via Stripe/Razorpay
-- 🎫 **NFT Receipts** - Optional proof-of-purchase NFTs
-
+- 💳 **Fallback** - Wallet & QR code payments
 </td>
 </tr>
 </table>
@@ -49,27 +45,34 @@
 ### 1️⃣ Installation
 
 ```bash
-npm install @solana-pay/checkout-widget
+npm install solana-pay-widget
 # or
-yarn add @solana-pay/checkout-widget
+yarn add solana-pay-widget
 ```
 
 ### 2️⃣ Basic Usage
 
 ```tsx
-import { CheckoutWidget } from '@solana-pay/checkout-widget';
+import { CheckoutWidget, WalletConnectionProvider } from 'solana-pay-widget';
+import 'solana-pay-widget/dist/index.css';
 
-function MyApp() {
+function App() {
+
   return (
-    <CheckoutWidget
-      checkoutId="your-checkout-id"
-      merchantWallet="your-solana-wallet-address"
-      amount={10.99}
-      currency="USDC"
-      productName="Premium Subscription"
-      onSuccess={(txId) => console.log('Payment successful:', txId)}
-      onError={(error) => console.error('Payment failed:', error)}
-    />
+    <WalletConnectionProvider rpcEndpoint='https://api.devnet.solana.com'> 
+        <CheckoutWidget
+          checkoutId="demo_checkout_123"
+          merchantWallet="4rbzcZsLxEefKdyho3U2dc5tfKUMdSM4vyRQhAkL4EHX"
+          amount={0.001}
+          currency="SOL"
+          productName="Premium Subscription"
+          description="Monthly premium subscription with all features"
+          isOpen={true}
+          onClose={() => {}}
+          onSuccess={(txnId) => {}}
+          onError={(err) => {}}
+        />
+      </WalletConnectionProvider>
   );
 }
 ```
@@ -78,16 +81,16 @@ function MyApp() {
 
 ```tsx
 <CheckoutWidget
-  checkoutId="checkout_123"
-  merchantWallet="9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
-  amount={25.00}
+  checkoutId="demo_checkout_123"
+  merchantWallet="4rbzcZsLxEefKdyho3U2dc5tfKUMdSM4vyRQhAkL4EHX"
+  amount={0.001}
   currency="SOL"
-  productName="Digital Art NFT"
-  description="Exclusive limited edition artwork"
-  theme="dark"
-  enableNftReceipt={true}
-  webhookUrl="https://your-api.com/webhook"
-  fallbackPayments={['stripe', 'razorpay']}
+  productName="Premium Subscription"
+  description="Monthly premium subscription with all features"
+  isOpen={true}
+  onClose={() => {}}
+  onSuccess={(txnId) => {}}
+  onError={(err) => {}}
 />
 ```
 
@@ -97,73 +100,13 @@ function MyApp() {
 
 ```mermaid
 graph TB
-    A[👤 Merchant] -->|Creates Checkout| B[🖥️ Dashboard]
-    B --> C[📋 Checkout Widget]
-    D[👥 Customer] -->|Visits| C
-    C -->|Solana Pay| E[🔗 Solana Blockchain]
-    C -->|Fallback| F[💳 Stripe/Razorpay]
-    E -->|Verify| G[⚡ Backend API]
-    F -->|Webhook| G
-    G -->|Update Status| H[✅ Order Complete]
-    H -->|Receipt| I[📧 Email + NFT]
+    A[👤 User] -->|Creates Payment| B[🛒 Checkout]
+    B --> C[💳 Payment Method]
+    C -->|Solana Pay| D[🔗 Solana Blockchain]
+    D -->|Verify| F[⚡ Backend API]
+    F -->|Update Status| G[✅ Order Complete]
+    F -->|Success Return| H[📧 You can store TxnId in DB]
 ```
-
----
-
-## 🔄 Payment Flow
-
-<details>
-<summary><b>🏪 Merchant Onboarding</b></summary>
-
-1. **Sign Up** - Create account with email/password (Firebase/Supabase)
-2. **Wallet Setup** - Add Solana wallet address to profile
-3. **Store Configuration** - Set up store details and preferences
-
-</details>
-
-<details>
-<summary><b>🛒 Checkout Creation</b></summary>
-
-1. **Product Details** - Enter name, amount, currency, description
-2. **Backend Storage** - System stores checkout details
-3. **Unique ID** - Returns `checkoutId` for widget integration
-
-</details>
-
-<details>
-<summary><b>💰 Customer Payment</b></summary>
-
-1. **Widget Display** - Customer sees product details and payment options
-2. **Payment Method Selection**:
-   - 🌟 **Solana Wallet** (Phantom/Backpack/Solflare)
-   - 📱 **QR Code** for mobile Solana Pay
-   - 💳 **Card/UPI** fallback (Stripe/Razorpay)
-
-</details>
-
-<details>
-<summary><b>⚡ Payment Processing</b></summary>
-
-**Solana Path:**
-- Generate Solana Pay URL with reference key
-- Customer approves transaction in wallet
-- Backend verifies transaction on blockchain
-
-**Traditional Path:**
-- Process payment via Stripe/Razorpay
-- Webhook confirms payment status
-
-</details>
-
-<details>
-<summary><b>✅ Order Confirmation</b></summary>
-
-1. **Status Update** - Backend marks order as paid
-2. **Success Display** - Widget shows confirmation message
-3. **Receipt Delivery** - Email receipt sent to customer
-4. **NFT Receipt** - Optional proof-of-purchase NFT minted
-
-</details>
 
 ---
 
@@ -173,15 +116,153 @@ graph TB
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
-| `checkoutId` | `string` | ✅ | Unique checkout identifier |
-| `merchantWallet` | `string` | ✅ | Merchant's Solana wallet address |
-| `amount` | `number` | ✅ | Payment amount |
+| `checkoutId` | `string` | ✅ | Unique checkout identifier for tracking |
+| `merchantWallet` | `string` | ✅ | Merchant's Solana wallet address (recipient) |
+| `amount` | `number` | ✅ | Payment amount (e.g., 0.001 for SOL) |
 | `currency` | `'SOL' \| 'USDC' \| 'USDT'` | ✅ | Payment currency |
-| `productName` | `string` | ✅ | Product/service name |
+| `productName` | `string` | ✅ | Product/service name shown in widget |
 | `description` | `string` | ❌ | Product description |
-| `theme` | `'light' \| 'dark' \| 'auto'` | ❌ | Widget theme |
-| `enableNftReceipt` | `boolean` | ❌ | Enable NFT receipt minting |
-| `webhookUrl` | `string` | ❌ | Payment webhook URL |
-| `fallbackPayments` | `string[]` | ❌ | Enabled fallback methods |
-| `onSuccess` | `(txId: string) => void` | ❌ | Success callback |
+| `theme` | `'light' \| 'dark' \| 'auto'` | ❌ | Widget theme (default: 'light') |
+| `enableNftReceipt` | `boolean` | ❌ | Enable NFT receipt minting (not implemented) |
+| `webhookUrl` | `string` | ❌ | Payment webhook URL (not implemented) |
+| `onSuccess` | `(txId: string) => void` | ❌ | Success callback with transaction ID |
 | `onError` | `(error: Error) => void` | ❌ | Error callback |
+| `onClose` | `() => void` | ❌ | Close callback |
+| `className` | `string` | ❌ | Custom CSS class for styling |
+| `isOpen` | `boolean` | ✅ | Control widget modal visibility |
+
+#### `<WalletConnectionProvider />`
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `rpcEndpoint` | `string` | ❌ | Solana RPC endpoint (default: devnet) |
+| `children` | `ReactNode` | ✅ | Child components |
+
+**Supported Wallets:**
+- 🦊 Phantom
+- ☀️ Solflare
+- 🅰️ Alpha Wallet
+
+---
+
+## 🌐 Network Configuration
+
+### Devnet (Testing)
+```tsx
+<WalletConnectionProvider rpcEndpoint='https://api.devnet.solana.com'>
+  <CheckoutWidget
+    merchantWallet="4rbzcZsLxEefKdyho3U2dc5tfKUMdSM4vyRQhAkL4EHX"
+    // ... other props
+  />
+</WalletConnectionProvider>
+```
+
+### Mainnet (Production)
+```tsx
+<WalletConnectionProvider rpcEndpoint='https://api.mainnet-beta.solana.com'>
+  <CheckoutWidget
+    merchantWallet="YOUR_MAINNET_WALLET_ADDRESS"
+    // ... other props
+  />
+</WalletConnectionProvider>
+```
+
+**⚠️ Important Notes:**
+- Widget automatically uses appropriate token addresses based on network
+- USDC/USDT payments require token accounts (automatically created if needed)
+- Always test on devnet before deploying to mainnet
+
+---
+
+## 💳 Payment Methods
+
+### SOL Payments
+- Direct wallet-to-wallet transfers
+- Minimum amount: 0.000001 SOL
+- Includes transaction fee estimation
+
+### Token Payments (USDC/USDT)
+- Requires associated token accounts
+- Automatic token account creation for recipients
+- 6 decimal precision for both USDC and USDT
+
+### QR Code Payments
+- Mobile wallet compatible
+- Real-time transaction polling
+- Automatic payment verification
+
+---
+
+## 🔧 Error Handling
+
+The widget includes comprehensive error handling:
+
+```tsx
+const handleError = (error) => {
+  switch(error.message) {
+    case 'Insufficient SOL balance':
+      // Handle insufficient funds
+      break;
+    case 'Transaction was cancelled':
+      // Handle user cancellation
+      break;
+    case 'Network error':
+      // Handle connection issues
+      break;
+    default:
+      // Handle other errors
+  }
+};
+```
+
+**Common Error Types:**
+- `Insufficient funds` - User needs more SOL/tokens
+- `Token account not found` - User needs to create token account
+- `Transaction was cancelled` - User rejected transaction
+- `Network error` - Connection or RPC issues
+
+---
+
+## 📱 QR Code Payment Flow
+
+1. **QR Generation** - Secure Solana Pay URL created
+2. **Mobile Scan** - User scans with mobile wallet
+3. **Transaction** - Payment processed on blockchain
+4. **Verification** - Auto-polling confirms payment
+5. **Completion** - Success callback triggered
+
+**QR Code Features:**
+- Auto-generated reference for tracking
+- Error correction for reliable scanning
+- Timeout after 5 minutes
+- Real-time status updates
+
+---
+
+## 🎨 Custom Styling
+
+```tsx
+<CheckoutWidget
+  className="my-custom-checkout"
+  theme="dark"
+  // ... other props
+/>
+```
+
+```css
+.my-custom-checkout {
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.my-custom-checkout .sp-checkout-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+```
+
+**Available CSS Classes:**
+- `.sp-modal-overlay` - Modal backdrop
+- `.sp-modal-container` - Main modal container
+- `.sp-checkout-header` - Header section
+- `.sp-qr-payment` - QR code container
+- `.sp-wallet-payment` - Wallet payment section
