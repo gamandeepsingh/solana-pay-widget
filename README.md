@@ -9,7 +9,7 @@
 
 **A seamless Web3 payment solution that bridges traditional payments with Solana blockchain**
 
-[� Live Demo](http://solana-pay-wallet.vercel.app/) 
+[� Live Demo](http://solana-pay-widget.vercel.app/) 
 </div>
 
 ---
