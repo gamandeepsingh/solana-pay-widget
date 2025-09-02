@@ -1,1 +1,1 @@
-# Solana-Pay Widget
+# Solana-Pay Widget Demo on Vite
